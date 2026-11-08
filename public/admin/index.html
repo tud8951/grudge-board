@@ -32,11 +32,19 @@
     button:disabled { cursor: not-allowed; opacity: .45; }
     .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .help, .muted { color: var(--muted); font-size: 12px; }
-    .entry-row { display: grid; grid-template-columns: 56px minmax(120px, 1fr) minmax(150px, 2fr) minmax(110px, .8fr) auto; gap: 10px; align-items: center; padding: 12px 0; border-top: 1px solid #2b1d1d; }
+    .tag-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid #2b1d1d; }
+    .tag-row:first-child { border-top: 0; }
+    .tag-order-actions { display: flex; gap: 5px; }
+    .tag-order-actions button { padding: 5px 10px; }
+    .bulk-assignment { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .bulk-assignment label { min-width: 190px; margin: 0; }
+    .bulk-assignment input[type="checkbox"], .row-tools input[type="checkbox"] { display: inline-block; width: auto; margin: 0; accent-color: var(--red); }
+    .bulk-assignment .select-all { display: flex; align-items: center; gap: 8px; min-width: 0; margin: 0 0 10px; }
+    .entry-row { display: grid; grid-template-columns: 90px minmax(120px, 1fr) minmax(150px, 2fr) minmax(110px, .8fr) auto; gap: 10px; align-items: center; padding: 12px 0; border-top: 1px solid #2b1d1d; }
     .entry-row:first-of-type { border-top: 0; }
     .entry-row input, .entry-row select, .entry-row textarea { margin: 0; }
     .entry-row .edit-description { min-height: 42px; height: 42px; resize: vertical; }
-    .entry-row .order-actions { display: flex; gap: 5px; }
+    .entry-row .row-tools, .entry-row .order-actions { display: flex; align-items: center; gap: 5px; }
     .entry-row .order-actions button { padding: 7px 10px; }
     #notice { position: sticky; top: 8px; z-index: 3; min-height: 0; color: #ffaaaa; }
     #notice:not(:empty) { margin-bottom: 12px; padding: 10px 13px; border: 1px solid #683131; background: #1d0d0d; }
@@ -44,8 +52,9 @@
     @media (max-width: 720px) {
       header { padding: 14px 18px; }
       .grid { grid-template-columns: 1fr; gap: 0; }
-      .entry-row { grid-template-columns: 42px 1fr 1fr; gap: 7px; }
-      .entry-row .order-actions { grid-column: 2 / -1; }
+      .entry-row { grid-template-columns: 72px 1fr 1fr; gap: 7px; }
+      .entry-row .row-tools { grid-column: 1; grid-row: 1 / span 2; flex-direction: column; }
+      .entry-row .row-tools input[type="checkbox"] { margin-bottom: 5px; }
     }
   </style>
 </head>
@@ -77,7 +86,7 @@
           <label>新标签名称<input id="tag-name" maxlength="50" required placeholder="例如：旧日恩怨"></label>
           <div class="actions" style="align-self:end;margin-bottom:12px"><button type="submit">创建标签</button></div>
         </form>
-        <p class="help">标签按创建顺序显示；删除标签时，其数据会保留并归入“未分类”。</p>
+        <p class="help">使用上下箭头调整标签顺序，前台会按此顺序展示；删除标签时，其数据会保留并归入“未分类”。</p>
         <div id="tag-list"></div>
       </section>
       <section class="panel">
@@ -99,7 +108,13 @@
       </section>
       <section class="panel">
         <h2>记录管理 <span id="entry-count" class="muted"></span></h2>
-        <p class="help">使用上下箭头调整前台展示顺序；编辑后需点击“保存”。</p>
+        <p class="help">使用上下箭头调整人物展示顺序；编辑后需点击“保存”。可勾选多条记录批量设置标签。</p>
+        <div class="bulk-assignment">
+          <label class="select-all"><input id="select-all-entries" type="checkbox">全选本页人物</label>
+          <label>批量设置为标签<select id="bulk-tag-select"></select></label>
+          <button id="assign-tag" type="button">应用到所选人物</button>
+          <span id="selected-count" class="muted">已选 0 条</span>
+        </div>
         <div id="entries-list"></div>
       </section>
     </div>
@@ -136,13 +151,26 @@
       $("#text-color").value = data.settings.textColor;
       $("#font-style").value = data.settings.fontStyle;
       $("#entry-tag").innerHTML = tagOptions();
+      $("#bulk-tag-select").innerHTML = tagOptions();
       $("#tag-list").innerHTML = tags.length
-        ? tags.map((tag) => `<span class="muted" style="display:inline-block;margin:4px 12px 4px 0"># ${escapeHtml(tag.name)}</span>`).join("")
+        ? tags.map((tag, index) => `
+          <div class="tag-row" data-id="${tag.id}">
+            <span class="muted"># ${escapeHtml(tag.name)}</span>
+            <div class="tag-order-actions">
+              <button type="button" class="move-tag" data-direction="-1" aria-label="上移标签 ${escapeHtml(tag.name)}" ${index === 0 ? "disabled" : ""}>↑</button>
+              <button type="button" class="move-tag" data-direction="1" aria-label="下移标签 ${escapeHtml(tag.name)}" ${index === tags.length - 1 ? "disabled" : ""}>↓</button>
+            </div>
+          </div>`).join("")
         : '<span class="muted">尚无标签</span>';
       $("#entry-count").textContent = `（${entries.length} 条）`;
+      $("#select-all-entries").checked = false;
+      $("#selected-count").textContent = "已选 0 条";
       $("#entries-list").innerHTML = entries.length ? entries.map((entry, index) => `
         <div class="entry-row" data-id="${entry.id}">
-          <div class="order-actions"><button type="button" class="move" data-direction="-1" aria-label="上移" ${index === 0 ? "disabled" : ""}>↑</button><button type="button" class="move" data-direction="1" aria-label="下移" ${index === entries.length - 1 ? "disabled" : ""}>↓</button></div>
+          <div class="row-tools">
+            <input class="entry-select" type="checkbox" aria-label="选择 ${escapeHtml(entry.name)}">
+            <div class="order-actions"><button type="button" class="move" data-direction="-1" aria-label="上移" ${index === 0 ? "disabled" : ""}>↑</button><button type="button" class="move" data-direction="1" aria-label="下移" ${index === entries.length - 1 ? "disabled" : ""}>↓</button></div>
+          </div>
           <input class="edit-name" aria-label="姓名" maxlength="100" value="${escapeHtml(entry.name)}">
           <textarea class="edit-description" aria-label="介绍" maxlength="2000">${escapeHtml(entry.description)}</textarea>
           <select class="edit-tag" aria-label="标签">${tagOptions(entry.tagId)}</select>
@@ -202,6 +230,21 @@
         notice("标签已创建");
       } catch (error) { notice(error.message); }
     });
+    $("#tag-list").addEventListener("click", async (event) => {
+      const button = event.target.closest(".move-tag");
+      if (!button) return;
+      const id = Number(button.closest(".tag-row").dataset.id);
+      const index = tags.findIndex((tag) => tag.id === id);
+      const target = index + Number(button.dataset.direction);
+      if (target < 0 || target >= tags.length) return;
+      const orderedTags = tags.slice();
+      [orderedTags[index], orderedTags[target]] = [orderedTags[target], orderedTags[index]];
+      try {
+        await api("/api/admin/tags", { method: "PUT", body: JSON.stringify({ ids: orderedTags.map((tag) => tag.id) }) });
+        await refresh();
+        notice("标签顺序已更新");
+      } catch (error) { notice(error.message); }
+    });
     $("#entry-form").addEventListener("submit", async (event) => {
       event.preventDefault();
       try {
@@ -222,6 +265,31 @@
         $("#bulk-text").value = "";
         await refresh();
         notice(`成功导入 ${result.imported} 条记录`);
+      } catch (error) { notice(error.message); }
+    });
+    $("#select-all-entries").addEventListener("change", (event) => {
+      const checkboxes = [...document.querySelectorAll(".entry-select")];
+      checkboxes.forEach((checkbox) => { checkbox.checked = event.target.checked; });
+      $("#selected-count").textContent = `已选 ${checkboxes.filter((checkbox) => checkbox.checked).length} 条`;
+    });
+    $("#entries-list").addEventListener("change", (event) => {
+      if (!event.target.classList.contains("entry-select")) return;
+      const checkboxes = [...document.querySelectorAll(".entry-select")];
+      const selectedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+      $("#select-all-entries").checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
+      $("#selected-count").textContent = `已选 ${selectedCount} 条`;
+    });
+    $("#assign-tag").addEventListener("click", async () => {
+      const ids = [...document.querySelectorAll(".entry-select:checked")]
+        .map((checkbox) => Number(checkbox.closest(".entry-row").dataset.id));
+      if (!ids.length) { notice("请先选择要设置标签的人物"); return; }
+      try {
+        const result = await api("/api/admin/entry-tags", {
+          method: "POST",
+          body: JSON.stringify({ ids, tagId: $("#bulk-tag-select").value ? Number($("#bulk-tag-select").value) : null }),
+        });
+        await refresh();
+        notice(`已为 ${result.updated} 条人物记录批量设置标签`);
       } catch (error) { notice(error.message); }
     });
     $("#entries-list").addEventListener("click", async (event) => {
@@ -246,8 +314,10 @@
         } else if (button.classList.contains("move")) {
           const index = entries.findIndex((entry) => entry.id === id);
           const target = index + Number(button.dataset.direction);
-          [entries[index], entries[target]] = [entries[target], entries[index]];
-          await api("/api/admin/entries", { method: "PUT", body: JSON.stringify({ ids: entries.map((entry) => entry.id) }) });
+          if (target < 0 || target >= entries.length) return;
+          const orderedEntries = entries.slice();
+          [orderedEntries[index], orderedEntries[target]] = [orderedEntries[target], orderedEntries[index]];
+          await api("/api/admin/entries", { method: "PUT", body: JSON.stringify({ ids: orderedEntries.map((entry) => entry.id) }) });
           notice("排序已更新");
           await refresh();
         }

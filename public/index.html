@@ -61,19 +61,16 @@
           list.innerHTML = '<div class="empty">暂无记录</div>';
           return;
         }
-        const tagNames = new Map(tags.map((tag) => [tag.id, tag.name]));
-        const sectionMap = new Map();
+        const entriesByTag = new Map();
         for (const entry of entries) {
-          const key = entry.tagId === null ? "untagged" : `tag-${entry.tagId}`;
-          if (!sectionMap.has(key)) {
-            sectionMap.set(key, {
-              title: entry.tagId === null ? "未分类" : tagNames.get(entry.tagId),
-              entries: [],
-            });
-          }
-          sectionMap.get(key).entries.push(entry);
+          if (!entriesByTag.has(entry.tagId)) entriesByTag.set(entry.tagId, []);
+          entriesByTag.get(entry.tagId).push(entry);
         }
-        const sections = [...sectionMap.values()];
+        const sections = tags
+          .map((tag) => ({ title: tag.name, entries: entriesByTag.get(tag.id) || [] }))
+          .filter((section) => section.entries.length > 0);
+        const untagged = entriesByTag.get(null) || [];
+        if (untagged.length) sections.push({ title: "未分类", entries: untagged });
         let number = 0;
         list.innerHTML = sections.map((section) => `
           <section class="tag-section">

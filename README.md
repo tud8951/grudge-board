@@ -7,7 +7,8 @@ A Chinese-language, full-stack list app built with Cloudflare Pages Functions an
 - Dark, red-accented responsive UI with a custom skull favicon.
 - D1-backed entries, tags, ordering, and theme settings.
 - Password-protected admin panel with signed, HttpOnly sessions.
-- Entry editing, deletion, ordering, tags, theme reset, and bulk import.
+- Entry editing, deletion, ordering, bulk tag assignment, and bulk import.
+- Adjustable tag ordering, reflected in the public page section order.
 
 ## Project structure
 
@@ -99,6 +100,8 @@ Open the local URL printed by Wrangler. The admin page is at `/admin/`.
 | `/api/admin/settings` | PUT | Save theme settings |
 | `/api/admin/settings/reset` | POST | Restore the default theme |
 | `/api/admin/tags` | POST | Create a tag |
+| `/api/admin/tags` | PUT | Save the order of all tags |
+| `/api/admin/entry-tags` | POST | Assign a tag to up to 500 selected entries |
 | `/api/admin/entries` | POST / PUT | Create an entry / save entry order |
 | `/api/admin/entries/:id` | PATCH / DELETE | Edit / delete an entry |
 | `/api/admin/bulk` | POST | Import up to 500 `name+description` lines |
