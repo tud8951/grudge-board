@@ -9,7 +9,6 @@ A Chinese-language, full-stack list app built with Cloudflare Pages Functions an
 - Password-protected admin panel with signed, HttpOnly sessions.
 - Entry editing, deletion, ordering, bulk tag assignment, and bulk import.
 - Adjustable tag ordering, reflected in the public page section order.
-- Optional per-entry stories (up to 10,000 characters), shown in a collapsible section on the public page.
 
 ## Project structure
 
@@ -43,7 +42,7 @@ Requirements: Node.js and [Wrangler](https://developers.cloudflare.com/workers/w
    wrangler d1 create grudge-board-db
    ```
 
-3. Initialize the database (includes the optional story field):
+3. Initialize the database:
 
    ```sh
    wrangler d1 execute grudge-board-db --local --file=./schema.sql
@@ -66,16 +65,10 @@ Open the local URL printed by Wrangler. The admin page is at `/admin/`.
 ## Deploy to Cloudflare Pages
 
 1. Create a D1 database and replace the example `database_id` in `wrangler.toml` with its UUID.
-2. Initialize a new production database:
+2. Initialize the production database:
 
    ```sh
    wrangler d1 execute grudge-board-db --remote --file=./schema.sql
-   ```
-
-   For an existing database, apply the additive story migration once before deploying the updated Functions:
-
-   ```sh
-   wrangler d1 execute grudge-board-db --remote --file=./migrations/0002_add_entry_story.sql
    ```
 
 3. Create a Pages project named `grudge-board` and deploy from the repository root:
@@ -110,7 +103,7 @@ Open the local URL printed by Wrangler. The admin page is at `/admin/`.
 | `/api/admin/tags` | PUT | Save the order of all tags |
 | `/api/admin/entry-tags` | POST | Assign a tag to up to 500 selected entries |
 | `/api/admin/entries` | POST / PUT | Create an entry / save entry order |
-| `/api/admin/entries/:id` | PATCH / DELETE | Edit / delete an entry, including its optional story |
+| `/api/admin/entries/:id` | PATCH / DELETE | Edit / delete an entry |
 | `/api/admin/bulk` | POST | Import up to 500 `name+description` lines |
 
 Admin sessions use signed, `HttpOnly`, `Secure`, `SameSite=Strict` cookies. Keep the `password` secret private; changing it invalidates existing sessions.

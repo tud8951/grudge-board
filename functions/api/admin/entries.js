@@ -7,23 +7,17 @@ export async function onRequestPost({ request, env }) {
   if (unauthorized) return unauthorized;
   const body = await readJson(request);
   if (body.error) return body.error;
-  const { name, description = "", story = "", tagId = null } = body.value;
-  if (
-    !validText(name, 100) ||
-    typeof description !== "string" ||
-    description.length > 2000 ||
-    typeof story !== "string" ||
-    story.length > 10000
-  ) {
-    return json({ error: "姓名须为 1 至 100 个字符、介绍最多 2000 个字符、故事最多 10000 个字符" }, 400);
+  const { name, description = "", tagId = null } = body.value;
+  if (!validText(name, 100) || typeof description !== "string" || description.length > 2000) {
+    return json({ error: "姓名须为 1 至 100 个字符，介绍最多 2000 个字符" }, 400);
   }
   if (tagId !== null && (!Number.isInteger(tagId) || tagId < 1)) return json({ error: "无效的标签" }, 400);
   if (tagId !== null && !(await env.DB.prepare("SELECT id FROM tags WHERE id = ?").bind(tagId).first())) {
     return json({ error: "标签不存在" }, 400);
   }
   const result = await env.DB.prepare(
-    "INSERT INTO entries (name, description, story, sort_order, tag_id) VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM entries), ?)",
-  ).bind(name.trim(), description.trim(), story.trim(), tagId).run();
+    "INSERT INTO entries (name, description, sort_order, tag_id) VALUES (?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM entries), ?)",
+  ).bind(name.trim(), description.trim(), tagId).run();
   return json({ id: result.meta.last_row_id }, 201);
 }
 

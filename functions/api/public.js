@@ -11,7 +11,7 @@ export async function onRequestGet({ env }) {
     env.DB.prepare("SELECT key, value FROM settings").all(),
     env.DB.prepare("SELECT id, name, sort_order AS sortOrder FROM tags ORDER BY sort_order, id").all(),
     env.DB.prepare(
-      "SELECT id, name, description, story, sort_order AS sortOrder, tag_id AS tagId FROM entries ORDER BY sort_order, id",
+      "SELECT id, name, description, sort_order AS sortOrder, tag_id AS tagId FROM entries ORDER BY sort_order, id",
     ).all(),
   ]);
   const settings = { ...DEFAULT_SETTINGS };

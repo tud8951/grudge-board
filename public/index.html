@@ -27,10 +27,6 @@
     .number { padding-top: 2px; font: 13px/1.6 "Noto Serif SC", serif; opacity: .5; }
     .entry h3 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: .1em; }
     .entry p { margin: 9px 0 0; color: color-mix(in srgb, var(--ink) 78%, white); font-size: 14px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .entry .story { margin-top: 12px; color: color-mix(in srgb, var(--ink) 78%, white); font-size: 13px; }
-    .story summary { width: fit-content; color: var(--ink); cursor: pointer; letter-spacing: .08em; }
-    .story summary::marker { color: color-mix(in srgb, var(--ink) 70%, white); }
-    .story p { margin-top: 10px; padding-left: 12px; border-left: 1px solid color-mix(in srgb, var(--ink) 40%, transparent); }
     footer { position: relative; padding: 24px; text-align: center; font-size: 11px; letter-spacing: .2em; opacity: .4; }
     @media (max-width: 520px) { header { padding-top: 56px; } main { padding-top: 34px; } .entry h3 { font-size: 18px; } }
   </style>
@@ -82,11 +78,7 @@
             ${section.entries.map((entry) => `
               <article class="entry">
                 <span class="number">${String(++number).padStart(2, "0")}</span>
-                <div>
-                  <h3>${escapeHtml(entry.name)}</h3>
-                  ${entry.description ? `<p>${escapeHtml(entry.description)}</p>` : ""}
-                  ${entry.story ? `<details class="story"><summary>仇人故事</summary><p>${escapeHtml(entry.story)}</p></details>` : ""}
-                </div>
+                <div><h3>${escapeHtml(entry.name)}</h3>${entry.description ? `<p>${escapeHtml(entry.description)}</p>` : ""}</div>
               </article>`).join("")}
           </section>`).join("");
       } catch {
