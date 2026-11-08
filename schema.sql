@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tags (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  tag_id INTEGER REFERENCES tags(id) ON DELETE SET NULL
+);
+
+INSERT OR IGNORE INTO settings (key, value) VALUES
+  ('backgroundColor', '#000000'),
+  ('textColor', '#ff0000'),
+  ('fontStyle', 'gothic');

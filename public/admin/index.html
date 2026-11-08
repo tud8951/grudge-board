@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090707">
+  <title>管理后台 · 仇人榜</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;900&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: dark; --red: #f04444; --muted: #9c8585; --line: #392323; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #090707; color: #f4eaea; font: 14px/1.6 "Noto Serif SC", serif; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 18px max(22px, calc((100% - 1000px)/2)); border-bottom: 1px solid var(--line); background: #0e0909; }
+    header a { color: var(--muted); text-decoration: none; }
+    h1 { margin: 0; color: var(--red); font: 34px "Ma Shan Zheng", serif; letter-spacing: .12em; }
+    main { width: min(1000px, calc(100% - 32px)); margin: 34px auto 80px; }
+    #login-panel { width: min(420px, 100%); margin: 10vh auto; padding: 30px; border: 1px solid var(--line); }
+    h2 { margin: 0 0 20px; color: var(--red); font-size: 17px; letter-spacing: .12em; }
+    .panel { margin-bottom: 18px; padding: 22px; border: 1px solid var(--line); background: #100b0b; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    label { display: block; margin-bottom: 12px; color: #cbbaba; font-size: 13px; }
+    input, textarea, select { display: block; width: 100%; margin-top: 6px; padding: 10px 11px; border: 1px solid #493030; border-radius: 2px; outline: none; background: #090707; color: #f4eaea; font: inherit; }
+    input:focus, textarea:focus, select:focus { border-color: var(--red); }
+    input[type="color"] { height: 43px; padding: 4px; cursor: pointer; }
+    textarea { min-height: 90px; resize: vertical; }
+    button { padding: 9px 14px; border: 1px solid #743333; border-radius: 2px; background: #281111; color: #ffbaba; font: inherit; cursor: pointer; }
+    button:hover { border-color: var(--red); background: #3a1515; }
+    button.danger { color: #ff7777; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .help, .muted { color: var(--muted); font-size: 12px; }
+    .entry-row { display: grid; grid-template-columns: 56px minmax(120px, 1fr) minmax(150px, 2fr) minmax(110px, .8fr) auto; gap: 10px; align-items: center; padding: 12px 0; border-top: 1px solid #2b1d1d; }
+    .entry-row:first-of-type { border-top: 0; }
+    .entry-row input, .entry-row select, .entry-row textarea { margin: 0; }
+    .entry-row .edit-description { min-height: 42px; height: 42px; resize: vertical; }
+    .entry-row .order-actions { display: flex; gap: 5px; }
+    .entry-row .order-actions button { padding: 7px 10px; }
+    #notice { position: sticky; top: 8px; z-index: 3; min-height: 0; color: #ffaaaa; }
+    #notice:not(:empty) { margin-bottom: 12px; padding: 10px 13px; border: 1px solid #683131; background: #1d0d0d; }
+    .toolbar { display: flex; gap: 8px; justify-content: flex-end; }
+    @media (max-width: 720px) {
+      header { padding: 14px 18px; }
+      .grid { grid-template-columns: 1fr; gap: 0; }
+      .entry-row { grid-template-columns: 42px 1fr 1fr; gap: 7px; }
+      .entry-row .order-actions { grid-column: 2 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <header><h1>仇人榜 · 管理</h1><nav><a href="/">查看前台</a></nav></header>
+  <main>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <section id="login-panel" hidden>
+      <h2>管理员登录</h2>
+      <form id="login-form">
+        <label>管理密码<input id="password" type="password" autocomplete="current-password" required></label>
+        <button type="submit">进入管理</button>
+      </form>
+    </section>
+    <div id="dashboard" hidden>
+      <div class="toolbar"><button id="logout" type="button">退出登录</button></div>
+      <section class="panel">
+        <h2>主题设置</h2>
+        <form id="theme-form" class="grid">
+          <label>背景颜色<input id="background-color" type="color" value="#000000"></label>
+          <label>文字颜色<input id="text-color" type="color" value="#ff0000"></label>
+          <label>字体风格<select id="font-style"><option value="gothic">暗黑衬线</option><option value="handwritten">手写风格</option><option value="serif">经典衬线</option></select></label>
+          <div class="actions" style="align-self:end;margin-bottom:12px"><button type="submit">保存主题</button><button id="reset-theme" type="button">恢复默认主题</button></div>
+        </form>
+      </section>
+      <section class="panel">
+        <h2>标签管理</h2>
+        <form id="tag-form" class="grid">
+          <label>新标签名称<input id="tag-name" maxlength="50" required placeholder="例如：旧日恩怨"></label>
+          <div class="actions" style="align-self:end;margin-bottom:12px"><button type="submit">创建标签</button></div>
+        </form>
+        <p class="help">标签按创建顺序显示；删除标签时，其数据会保留并归入“未分类”。</p>
+        <div id="tag-list"></div>
+      </section>
+      <section class="panel">
+        <h2>新增记录</h2>
+        <form id="entry-form" class="grid">
+          <label>姓名<input id="entry-name" maxlength="100" required></label>
+          <label>所属标签<select id="entry-tag"></select></label>
+          <label style="grid-column:1/-1">介绍<textarea id="entry-description" maxlength="2000"></textarea></label>
+          <div class="actions"><button type="submit">添加记录</button></div>
+        </form>
+      </section>
+      <section class="panel">
+        <h2>批量导入</h2>
+        <form id="bulk-form">
+          <label>每行一条，格式为“姓名+介绍”<textarea id="bulk-text" placeholder="张三+此处填写介绍&#10;李四+此处填写介绍" required></textarea></label>
+          <p class="help">最多一次导入 500 条；姓名和介绍之间使用半角 + 号。批量导入的记录默认为未分类。</p>
+          <button type="submit">导入记录</button>
+        </form>
+      </section>
+      <section class="panel">
+        <h2>记录管理 <span id="entry-count" class="muted"></span></h2>
+        <p class="help">使用上下箭头调整前台展示顺序；编辑后需点击“保存”。</p>
+        <div id="entries-list"></div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    let tags = [];
+    let entries = [];
+    function notice(message) { $("#notice").textContent = message; }
+    async function api(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `请求失败 (${response.status})`);
+      return payload;
+    }
+    function tagOptions(selectedId = null) {
+      return `<option value="">未分类</option>${tags.map((tag) =>
+        `<option value="${tag.id}" ${selectedId === tag.id ? "selected" : ""}>${escapeHtml(tag.name)}</option>`,
+      ).join("")}`;
+    }
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      })[char]);
+    }
+    async function loadData() {
+      const data = await api("/api/public");
+      tags = data.tags;
+      entries = data.entries;
+      $("#background-color").value = data.settings.backgroundColor;
+      $("#text-color").value = data.settings.textColor;
+      $("#font-style").value = data.settings.fontStyle;
+      $("#entry-tag").innerHTML = tagOptions();
+      $("#tag-list").innerHTML = tags.length
+        ? tags.map((tag) => `<span class="muted" style="display:inline-block;margin:4px 12px 4px 0"># ${escapeHtml(tag.name)}</span>`).join("")
+        : '<span class="muted">尚无标签</span>';
+      $("#entry-count").textContent = `（${entries.length} 条）`;
+      $("#entries-list").innerHTML = entries.length ? entries.map((entry, index) => `
+        <div class="entry-row" data-id="${entry.id}">
+          <div class="order-actions"><button type="button" class="move" data-direction="-1" aria-label="上移" ${index === 0 ? "disabled" : ""}>↑</button><button type="button" class="move" data-direction="1" aria-label="下移" ${index === entries.length - 1 ? "disabled" : ""}>↓</button></div>
+          <input class="edit-name" aria-label="姓名" maxlength="100" value="${escapeHtml(entry.name)}">
+          <textarea class="edit-description" aria-label="介绍" maxlength="2000">${escapeHtml(entry.description)}</textarea>
+          <select class="edit-tag" aria-label="标签">${tagOptions(entry.tagId)}</select>
+          <div class="actions"><button type="button" class="save">保存</button><button type="button" class="danger delete">删除</button></div>
+        </div>`).join("") : '<p class="muted">尚无记录。</p>';
+    }
+    async function refresh() {
+      try { await loadData(); }
+      catch (error) { notice(error.message); }
+    }
+    async function start() {
+      try {
+        const { authenticated } = await api("/api/admin/session");
+        $("#login-panel").hidden = authenticated;
+        $("#dashboard").hidden = !authenticated;
+        if (authenticated) await refresh();
+      } catch (error) { notice(error.message); }
+    }
+    $("#login-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        await api("/api/login", { method: "POST", body: JSON.stringify({ password: $("#password").value }) });
+        $("#password").value = "";
+        notice("");
+        await start();
+      } catch (error) { notice(error.message); }
+    });
+    $("#logout").addEventListener("click", async () => {
+      try {
+        await api("/api/logout", { method: "POST", body: "{}" });
+        $("#dashboard").hidden = true;
+        $("#login-panel").hidden = false;
+        notice("已退出登录");
+      } catch (error) { notice(error.message); }
+    });
+    $("#theme-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        await api("/api/admin/settings", { method: "PUT", body: JSON.stringify({
+          backgroundColor: $("#background-color").value,
+          textColor: $("#text-color").value,
+          fontStyle: $("#font-style").value,
+        }) });
+        notice("主题已保存");
+      } catch (error) { notice(error.message); }
+    });
+    $("#reset-theme").addEventListener("click", async () => {
+      try { await api("/api/admin/settings/reset", { method: "POST", body: "{}" }); await refresh(); notice("主题已恢复默认"); }
+      catch (error) { notice(error.message); }
+    });
+    $("#tag-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        await api("/api/admin/tags", { method: "POST", body: JSON.stringify({ name: $("#tag-name").value }) });
+        $("#tag-name").value = "";
+        await refresh();
+        notice("标签已创建");
+      } catch (error) { notice(error.message); }
+    });
+    $("#entry-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        await api("/api/admin/entries", { method: "POST", body: JSON.stringify({
+          name: $("#entry-name").value,
+          description: $("#entry-description").value,
+          tagId: $("#entry-tag").value ? Number($("#entry-tag").value) : null,
+        }) });
+        $("#entry-form").reset();
+        await refresh();
+        notice("记录已添加");
+      } catch (error) { notice(error.message); }
+    });
+    $("#bulk-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const result = await api("/api/admin/bulk", { method: "POST", body: JSON.stringify({ text: $("#bulk-text").value }) });
+        $("#bulk-text").value = "";
+        await refresh();
+        notice(`成功导入 ${result.imported} 条记录`);
+      } catch (error) { notice(error.message); }
+    });
+    $("#entries-list").addEventListener("click", async (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const row = button.closest(".entry-row");
+      const id = Number(row.dataset.id);
+      try {
+        if (button.classList.contains("delete")) {
+          if (!confirm("确定删除这条记录吗？")) return;
+          await api(`/api/admin/entries/${id}`, { method: "DELETE" });
+          notice("记录已删除");
+          await refresh();
+        } else if (button.classList.contains("save")) {
+          await api(`/api/admin/entries/${id}`, { method: "PATCH", body: JSON.stringify({
+            name: row.querySelector(".edit-name").value,
+            description: row.querySelector(".edit-description").value,
+            tagId: row.querySelector(".edit-tag").value ? Number(row.querySelector(".edit-tag").value) : null,
+          }) });
+          notice("记录已保存");
+          await refresh();
+        } else if (button.classList.contains("move")) {
+          const index = entries.findIndex((entry) => entry.id === id);
+          const target = index + Number(button.dataset.direction);
+          [entries[index], entries[target]] = [entries[target], entries[index]];
+          await api("/api/admin/entries", { method: "PUT", body: JSON.stringify({ ids: entries.map((entry) => entry.id) }) });
+          notice("排序已更新");
+          await refresh();
+        }
+      } catch (error) { notice(error.message); }
+    });
+    start();
+  </script>
+</body>
+</html>
