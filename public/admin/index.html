@@ -44,6 +44,14 @@
     .entry-row:first-of-type { border-top: 0; }
     .entry-row input, .entry-row select, .entry-row textarea { margin: 0; }
     .entry-row .edit-description { min-height: 42px; height: 42px; resize: vertical; }
+    .story-toggle { display: flex; align-items: center; gap: 8px; }
+    .story-toggle input[type="checkbox"] { display: inline-block; width: auto; margin: 0; accent-color: var(--red); }
+    .story-field { grid-column: 1 / -1; }
+    .story-field[hidden] { display: none; }
+    .story-field textarea, .edit-story textarea { min-height: 88px; }
+    .edit-story { grid-column: 2 / -1; color: var(--muted); font-size: 12px; }
+    .edit-story summary { width: fit-content; cursor: pointer; }
+    .edit-story textarea { margin-top: 8px !important; color: #f4eaea; font-size: 13px; }
     .entry-row .row-tools, .entry-row .order-actions { display: flex; align-items: center; gap: 5px; }
     .entry-row .order-actions button { padding: 7px 10px; }
     #notice { position: sticky; top: 8px; z-index: 3; min-height: 0; color: #ffaaaa; }
@@ -95,6 +103,8 @@
           <label>姓名<input id="entry-name" maxlength="100" required></label>
           <label>所属标签<select id="entry-tag"></select></label>
           <label style="grid-column:1/-1">介绍<textarea id="entry-description" maxlength="2000"></textarea></label>
+          <label class="story-toggle"><input id="entry-story-enabled" type="checkbox">添加仇人故事（可选）</label>
+          <label id="entry-story-field" class="story-field" hidden>仇人故事<textarea id="entry-story" maxlength="10000" placeholder="记录这段故事……"></textarea></label>
           <div class="actions"><button type="submit">添加记录</button></div>
         </form>
       </section>
@@ -174,6 +184,10 @@
           <input class="edit-name" aria-label="姓名" maxlength="100" value="${escapeHtml(entry.name)}">
           <textarea class="edit-description" aria-label="介绍" maxlength="2000">${escapeHtml(entry.description)}</textarea>
           <select class="edit-tag" aria-label="标签">${tagOptions(entry.tagId)}</select>
+          <details class="edit-story">
+            <summary>${entry.story ? "编辑仇人故事" : "添加仇人故事（可选）"}</summary>
+            <textarea class="edit-story-text" aria-label="仇人故事" maxlength="10000" placeholder="记录这段故事……">${escapeHtml(entry.story || "")}</textarea>
+          </details>
           <div class="actions"><button type="button" class="save">保存</button><button type="button" class="danger delete">删除</button></div>
         </div>`).join("") : '<p class="muted">尚无记录。</p>';
     }
@@ -251,12 +265,18 @@
         await api("/api/admin/entries", { method: "POST", body: JSON.stringify({
           name: $("#entry-name").value,
           description: $("#entry-description").value,
+          story: $("#entry-story-enabled").checked ? $("#entry-story").value : "",
           tagId: $("#entry-tag").value ? Number($("#entry-tag").value) : null,
         }) });
         $("#entry-form").reset();
+        $("#entry-story-field").hidden = true;
         await refresh();
         notice("记录已添加");
       } catch (error) { notice(error.message); }
+    });
+    $("#entry-story-enabled").addEventListener("change", (event) => {
+      $("#entry-story-field").hidden = !event.target.checked;
+      if (!event.target.checked) $("#entry-story").value = "";
     });
     $("#bulk-form").addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -307,6 +327,7 @@
           await api(`/api/admin/entries/${id}`, { method: "PATCH", body: JSON.stringify({
             name: row.querySelector(".edit-name").value,
             description: row.querySelector(".edit-description").value,
+            story: row.querySelector(".edit-story-text").value,
             tagId: row.querySelector(".edit-tag").value ? Number(row.querySelector(".edit-tag").value) : null,
           }) });
           notice("记录已保存");
